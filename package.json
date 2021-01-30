@@ -10,7 +10,8 @@
 		"Other"
 	],
 	"activationEvents": [
-		"onCommand:vstodo.helloWorld"
+		"onCommand:vstodo.helloWorld",
+		"onCommand:vstodo.askQuastion"
 	],
 	"main": "./dist/extension.js",
 	"contributes": {
@@ -18,6 +19,11 @@
 			{
 				"command": "vstodo.helloWorld",
 				"title": "Hello World"
+			},
+			{
+				"command": "vstodo.askQuastion",
+				"category": "VSTodo",
+				"title": "Ask Quastion"
 			}
 		]
 	},
