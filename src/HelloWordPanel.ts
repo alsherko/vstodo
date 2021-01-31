@@ -157,10 +157,7 @@ export class HelloWorldPanel {
         <script nonce="${nonce}">
         </script>
 			</head>
-        <body>
-            <h1>Hello World!</h1>
-            <input />
-            <button>Hello</button>
+      <body>
 	    </body>
       <script src="${scriptUri}" nonce="${nonce}">
 			</html>`;
