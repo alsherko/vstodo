@@ -1,3 +1,4 @@
 dist
 .env
+.idea
 node_modules
