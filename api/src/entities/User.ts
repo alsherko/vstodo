@@ -12,4 +12,7 @@ export class User extends BaseEntity {
 
     @Column("text", { nullable: true })
     name: string;
+
+    @Column("text", { unique: true })
+    githubId: string;
 }
