@@ -1,14 +1,24 @@
 <script lang="ts">
-import { each } from "svelte/internal";
+
+import { onMount } from "svelte/internal";
+
     let todos: Array<{text: string, completed: boolean}>  = []
     let text = ""
-</script>
 
-<style>
-    .complete {
-        text-decoration: line-through;
-    }
-</style>
+    onMount(() => {
+        window.addEventListener('message', event => {
+        const message = event.data;
+        switch (message.type) {
+            case 'new-todo':
+                todos = [
+                    { text: message.value, completed: false }, 
+                    ...todos
+                ];
+                break;
+        }
+    });
+    })
+</script>
 
 <form on:submit|preventDefault={e => {
    todos = [{text, completed: false},...todos];
@@ -16,10 +26,6 @@ import { each } from "svelte/internal";
 }}>
     <input bind:value={text}/>
 </form>
-
-<pre>
-    {JSON.stringify(todos, null, 2)}
-</pre>
 
 <ul>
     {#each todos as todo (todo.text)}
@@ -32,3 +38,14 @@ import { each } from "svelte/internal";
         </li>
     {/each}
 </ul>
+
+
+<button 
+    on:click={() => {   
+        tsvscode.postMessage({type: 'onInfo', value: 'info message'})
+    }}>click me</button>
+
+<button 
+    on:click={() => {   
+        tsvscode.postMessage({type: 'onError', value: 'error message'})
+    }}>click me for error</button>

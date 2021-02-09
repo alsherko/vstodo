@@ -9,6 +9,12 @@ import { SidebarProvider } from './SidebarProvider';
 export function activate(context: vscode.ExtensionContext) {
 
 	const sidebarProvider = new SidebarProvider(context.extensionUri);
+
+	const item = vscode.window.createStatusBarItem(vscode.StatusBarAlignment.Right);
+	item.text = "$(beaker) Add Todo";
+	item.command = "vstodo.addTodo";
+	item.show();
+
 	context.subscriptions.push(
 	  vscode.window.registerWebviewViewProvider(
 		"vstodo-sidebar",
@@ -19,6 +25,22 @@ export function activate(context: vscode.ExtensionContext) {
 	context.subscriptions.push(vscode.commands.registerCommand('vstodo.helloWorld', () => {
 		console.log(context.extensionUri)
 		HelloWorldPanel.createOrShow(context.extensionUri)
+	}))
+
+	context.subscriptions.push(vscode.commands.registerCommand('vstodo.addTodo', () => {
+		const {activeTextEditor} = vscode.window
+
+		if(!activeTextEditor) {
+			vscode.window.showInformationMessage("No active text editor");
+			return;
+		}
+		
+		const text = activeTextEditor.document.getText(activeTextEditor.selection)
+		sidebarProvider._view?.webview.postMessage({
+			type: 'new-todo', 
+			value: text,
+		})
+					
 	}))
 
 	context.subscriptions.push(vscode.commands.registerCommand('vstodo.refresh', async () => {
