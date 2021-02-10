@@ -5,6 +5,7 @@ import passport from 'passport';
 import {Strategy as GitHubStrategy} from 'passport-github';
 import {join} from 'path';
 import {createConnection} from 'typeorm'
+import cors from 'cors';
 import jwt from 'jsonwebtoken';
 
 import {User} from './entities/User';
@@ -28,6 +29,7 @@ const main = async () => {
     passport.serializeUser((user: any, done) => {
         done(null, user.uccessToken)
     });
+    app.use(cors({origin: '*'}))
     app.use(passport.initialize())
 
     passport.use(new GitHubStrategy({
