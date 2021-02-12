@@ -8,8 +8,10 @@ import {createConnection} from 'typeorm'
 import cors from 'cors';
 import jwt from 'jsonwebtoken';
 
+import {Todo} from "./entities/Todo";
 import {User} from './entities/User';
 import {__prod__} from './constants';
+import {isAuth} from "./isAuth";
 
 const main = async () => {
     await createConnection({
@@ -21,25 +23,25 @@ const main = async () => {
         entities: [join(__dirname, './entities/*.*')],
         logging: !__prod__,
         synchronize: !__prod__,
-
-    })
-
-    const app = express()
-
-    passport.serializeUser((user: any, done) => {
-        done(null, user.uccessToken)
     });
-    app.use(cors({origin: '*'}))
-    app.use(passport.initialize())
 
-    passport.use(new GitHubStrategy({
+    const app = express();
+    passport.serializeUser((user: any, done) => {
+        done(null, user.accessToken);
+    });
+    app.use(cors({ origin: "*" }));
+    app.use(passport.initialize());
+    app.use(express.json());
+
+    passport.use(
+      new GitHubStrategy(
+        {
             clientID: process.env.GITHUB_CLIENT_ID,
             clientSecret: process.env.GITHUB_CLIENT_SECRET,
             callbackURL: "http://localhost:3003/auth/github/callback",
         },
-        async (_accessToken, _refreshToken, profile, cb) => {
-            let user = await User.findOne({where: {githubId: profile.id}});
-
+        async (_, __, profile, cb) => {
+            let user = await User.findOne({ where: { githubId: profile.id } });
             if (user) {
                 user.name = profile.displayName;
                 await user.save();
@@ -49,17 +51,59 @@ const main = async () => {
                     githubId: profile.id,
                 }).save();
             }
-            cb(null, {accessToken: jwt.sign({userId: user.id}, process.env.JWT_KEY, {expiresIn: '1y'})})
-        })
+            cb(null, {
+                accessToken: jwt.sign(
+                  { userId: user.id },
+                  process.env.JWT_KEY,
+                  {
+                      expiresIn: "1y",
+                  }
+                ),
+            });
+        }
+      )
     );
-    app.get('/auth/github',
-        passport.authenticate('github', {session: false}));
 
-    app.get('/auth/github/callback',
-        passport.authenticate('github', {session: false}),
-        (req: any, res) => {
-            res.redirect(`http://localhost:54321/auth/${req.user.accessToken}`)
+    app.get("/auth/github", passport.authenticate("github", { session: false }));
+
+    app.get(
+      "/auth/github/callback",
+      passport.authenticate("github", { session: false }),
+      (req: any, res) => {
+          res.redirect(`http://localhost:54321/auth/${req.user.accessToken}`);
+      }
+    );
+
+    app.get("/todo", isAuth, async (req, res) => {
+        const todos = await Todo.find({
+            where: { creatorId: req.userId },
+            order: { id: "DESC" },
         });
+
+        res.send({ todos });
+    });
+
+    app.post("/todo", isAuth, async (req, res) => {
+        const todo = await Todo.create({
+            text: req.body.text,
+            creatorId: req.userId,
+        }).save();
+        res.send({ todo });
+    });
+
+    app.put("/todo", isAuth, async (req, res) => {
+        const todo = await Todo.findOne(req.body.id);
+        if (!todo) {
+            res.send({ todo: null });
+            return;
+        }
+        if (todo.creatorId !== req.userId) {
+            throw new Error("not authorized");
+        }
+        todo.completed = !todo.completed;
+        await todo.save();
+        res.send({ todo });
+    });
 
     app.get("/me", async (req, res) => {
         const authHeader = req.headers.authorization;
@@ -94,13 +138,9 @@ const main = async () => {
         res.send({ user });
     });
 
-
-    app.get('/', (_req, res) => {
-        res.send("hello");
-    })
     app.listen(3003, () => {
-        console.log('listening on localhost:3002')
-    })
+        console.log("listening on localhost:3003");
+    });
 };
 
 main();
